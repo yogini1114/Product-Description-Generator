@@ -1,0 +1,8 @@
+Write a simple and clear product description for an online shopping website.
+
+Product Name: {name}
+Brand: {brand}
+Features: {features}
+Price: {price}
+
+Write the description in easy language.
