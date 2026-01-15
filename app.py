@@ -16,21 +16,24 @@ features = st.text_area("Key Features")
 price = st.text_input("Price (optional)")
 
 def generate_description(name, brand, features, price):
-    prompt = f"""
-Write a detailed and natural product description for the following item.
+        prompt = f"""
+You are an experienced product reviewer.
+
+Write a detailed, original, and category-aware product description.
+Avoid generic sentences.
 
 Product name: {name}
 Brand: {brand if brand else "Not specified"}
 Key features: {features}
 Price: {price if price else "Not specified"}
 
-Guidelines:
-- Description should be 90 to 130 words
-- Write like a human product expert
-- Do not repeat sentences
-- Focus on real-life usage and benefits
-- Do not use bullet points
+Instructions:
+- Explain how the features benefit the user
+- Use real-life use cases
+- Keep tone natural and human
+- Minimum 100 words
 """
+
 
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
