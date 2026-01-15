@@ -1,70 +1,78 @@
 import streamlit as st
+import openai
+import os
 import random
+
+# API key from environment / secrets
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 st.title("Product Description Generator")
 
-# -------- INPUTS --------
+# User Inputs
 product_name = st.text_input("Product Name")
 brand = st.text_input("Brand (optional)")
 features = st.text_area("Key Features (comma separated)")
 price = st.text_input("Price (optional)")
 
-# -------- HELPER FUNCTION --------
+if not brand:
+    brand = "a well-known brand"
+
+if not price:
+    price = "not specified"
+
 def generate_description(name, brand, features, price):
-    sentences = []
-
-    # intro
-    intro_templates = [
-        f"{name} is a well-designed product meant for everyday use.",
-        f"The {name} is created to meet daily usage needs.",
-        f"{name} offers a balance of usability and performance."
+    styles = [
+        "Write in a simple and informative tone.",
+        "Write in a user-friendly and practical tone.",
+        "Write like an e-commerce product listing.",
+        "Write focusing on daily usage and comfort."
     ]
-    sentences.append(random.choice(intro_templates))
 
-    # brand
-    if brand:
-        sentences.append(f"It is manufactured by {brand}, a brand known for reliability.")
+    prompt = f"""
+    Write a detailed product description for the following product.
 
-    # features
-    feature_list = [f.strip() for f in features.split(",") if f.strip()]
-    for feat in feature_list:
-        sentences.append(f"The product includes {feat}, which improves overall user experience.")
+    Product Name: {name}
+    Brand: {brand}
+    Key Features: {features}
+    Price: {price}
 
-    # usage
-    usage_templates = [
-        "It can be comfortably used at home as well as outdoors.",
-        "This product is suitable for work, travel, and personal use.",
-        "Its design supports long-term usage without discomfort."
-    ]
-    sentences.append(random.choice(usage_templates))
+    Instructions:
+    - {random.choice(styles)}
+    - Do not repeat sentences.
+    - Make the description specific to the product.
+    - Minimum length: 80 words.
+    - Explain how the product can be used in real life.
+    """
 
-    # price
-    if price:
-        sentences.append(f"The product is priced at {price}, offering good value for money.")
-    else:
-        sentences.append("Pricing details are currently not available.")
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.8
+    )
 
-    # conclusion
-    sentences.append("Overall, this product is a practical choice for users looking for quality and dependability.")
+    return response.choices[0].message.content.strip()
 
-    return " ".join(sentences)
-
-# -------- BUTTON --------
+# Button
 if st.button("Generate"):
     if not product_name or not features:
-        st.error("Product name and features are required.")
+        st.error("Please enter product name and features")
     else:
-        description = generate_description(product_name, brand, features, price)
+        description = generate_description(
+            product_name,
+            brand,
+            features,
+            price
+        )
 
         st.subheader("Generated Description")
         st.write(description)
 
-        word_count = len(description.split())
-        st.write("Word count:", word_count)
+        wc = len(description.split())
+        st.write("Word count:", wc)
 
-        if word_count < 60:
-            st.error("Description is too short")
-        elif word_count > 140:
-            st.error("Description is too long")
+        if wc < 70:
+            st.warning("Description is a bit short")
         else:
-            st.success("Description length is acceptable")
+            st.success("Description length is good")
