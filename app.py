@@ -1,78 +1,94 @@
 import streamlit as st
 import openai
 import os
-import random
 
-# API key from environment / secrets
+# -------------------------------
+# Configuration
+# -------------------------------
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
+st.set_page_config(page_title="Product Description Generator")
 st.title("Product Description Generator")
 
-# User Inputs
+# -------------------------------
+# Input Fields
+# -------------------------------
 product_name = st.text_input("Product Name")
 brand = st.text_input("Brand (optional)")
-features = st.text_area("Key Features (comma separated)")
+features = st.text_area("Key Features")
 price = st.text_input("Price (optional)")
 
-if not brand:
-    brand = "a well-known brand"
+# -------------------------------
+# Fallback Description Generator
+# -------------------------------
+def fallback_description(name, brand, features, price):
+    desc = f"{name} is designed to meet everyday needs and practical use. "
 
-if not price:
-    price = "not specified"
+    if brand:
+        desc += f"It is manufactured by {brand}, a brand known for reliability and quality. "
 
-def generate_description(name, brand, features, price):
-    styles = [
-        "Write in a simple and informative tone.",
-        "Write in a user-friendly and practical tone.",
-        "Write like an e-commerce product listing.",
-        "Write focusing on daily usage and comfort."
-    ]
+    if features:
+        desc += f"The product offers features such as {features}, which improve overall usability. "
 
+    desc += (
+        "The design focuses on comfort, durability, and ease of use, "
+        "making it suitable for regular use in different situations. "
+    )
+
+    if price:
+        desc += f"It is available at a price of {price}, providing good value for money."
+    else:
+        desc += "Pricing information is currently not specified."
+
+    return desc
+
+# -------------------------------
+# AI Description Generator
+# -------------------------------
+def ai_description(name, brand, features, price):
     prompt = f"""
-    Write a detailed product description for the following product.
+Write a detailed and natural product description.
 
-    Product Name: {name}
-    Brand: {brand}
-    Key Features: {features}
-    Price: {price}
+Product Name: {name}
+Brand: {brand if brand else 'Not specified'}
+Key Features: {features}
+Price: {price if price else 'Not specified'}
 
-    Instructions:
-    - {random.choice(styles)}
-    - Do not repeat sentences.
-    - Make the description specific to the product.
-    - Minimum length: 80 words.
-    - Explain how the product can be used in real life.
-    """
+Write a paragraph of at least 90 words.
+"""
 
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
-        messages=[
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.8
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7
     )
 
     return response.choices[0].message.content.strip()
 
-# Button
+# -------------------------------
+# Generate Button
+# -------------------------------
 if st.button("Generate"):
     if not product_name or not features:
-        st.error("Please enter product name and features")
+        st.error("Please enter at least Product Name and Key Features.")
     else:
-        description = generate_description(
-            product_name,
-            brand,
-            features,
-            price
-        )
+        try:
+            description = ai_description(product_name, brand, features, price)
+        except Exception:
+            description = fallback_description(product_name, brand, features, price)
 
+        # -------------------------------
+        # Output
+        # -------------------------------
         st.subheader("Generated Description")
         st.write(description)
 
-        wc = len(description.split())
-        st.write("Word count:", wc)
+        word_count = len(description.split())
+        st.write("Word count:", word_count)
 
-        if wc < 70:
-            st.warning("Description is a bit short")
+        if word_count < 70:
+            st.warning("Description is short, but acceptable for basic usage.")
+        elif word_count > 150:
+            st.warning("Description is slightly long.")
         else:
-            st.success("Description length is good")
+            st.success("Description length is good.")
